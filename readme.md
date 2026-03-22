@@ -4,6 +4,11 @@ This package provides integration with the Zendesk API. It supports creating tic
 
 The package simply provides a `Zendesk` facade that acts as a wrapper to the [zendesk/zendesk_api_client_php](https://github.com/zendesk/zendesk_api_client_php) package.
 
+## Compatibility
+
+- PHP 8.1+
+- Laravel 10, 11 and 12
+
 **NB:** Currently only supports token-based authentication.
 
 ## Installation
@@ -14,9 +19,9 @@ You can install this package via Composer using:
 composer require huddledigital/zendesk-laravel
 ```
 
-You must also install the service provider.
+Laravel uses package auto-discovery, so you do not need to register the service provider manually.
 
-> Laravel 5.5+ users: this step may be skipped, as the package supports auto discovery.
+If you want to register the package explicitly, add the provider below:
 
 ```php
 // config/app.php
@@ -29,6 +34,8 @@ You must also install the service provider.
 
 If you want to make use of the facade you must install it as well.
 
+Laravel auto-discovers the service provider, but facades still need an alias if you want to use the short `Zendesk` class name in older applications.
+
 ```php
 // config/app.php
 'aliases' => [
@@ -39,8 +46,7 @@ If you want to make use of the facade you must install it as well.
 
 ## Configuration
 
-
-To publish the config file to `app/config/zendesk-laravel.php` run:
+To publish the config file to `config/zendesk-laravel.php` run:
 
 ```bash
 php artisan vendor:publish --provider="Huddle\Zendesk\Providers\ZendeskServiceProvider"
@@ -48,6 +54,13 @@ php artisan vendor:publish --provider="Huddle\Zendesk\Providers\ZendeskServicePr
 
 
 Set your configuration using **environment variables**, either in your `.env` file or on your server's control panel:
+
+```dotenv
+ZENDESK_DRIVER=api
+ZENDESK_SUBDOMAIN=
+ZENDESK_USERNAME=
+ZENDESK_TOKEN=
+```
 
 - `ZENDESK_SUBDOMAIN`
 
@@ -97,30 +110,18 @@ Zendesk::ticket(123)->delete();
 
 ### Dependency injection
 
-If you'd prefer not to use the facade, you can skip adding the alias to `config/app.php` and instead inject `Huddle\Zendesk\Services\ZendeskService` into your class. You can then use all of the same methods on this object as you would on the facade.
+If you'd prefer not to use the facade, you can skip adding the alias to `config/app.php` and instead resolve the `zendesk` binding from the container. You can then use all of the same methods on this object as you would on the facade.
 
 ```php
-<?php
+$zendesk = app('zendesk');
 
-use Huddle\Zendesk\Services\ZendeskService;
-
-class MyClass {
-
-    public function __construct(ZendeskService $zendesk_service) {
-        $this->zendesk_service = $zendesk_service;
-    }
-
-    public function addTicket() {
-        $this->zendesk_service->tickets()->create([
-              'subject' => 'Subject',
-              'comment' => [
-                    'body' => 'Ticket content.'
-              ],
-              'priority' => 'normal'
-        ]);
-    }
-
-}
+$zendesk->tickets()->create([
+    'subject' => 'Subject',
+    'comment' => [
+        'body' => 'Ticket content.',
+    ],
+    'priority' => 'normal',
+]);
 ```
 
 This package is available under the [MIT license](http://opensource.org/licenses/MIT).

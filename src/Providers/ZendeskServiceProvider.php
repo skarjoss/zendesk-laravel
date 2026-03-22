@@ -6,6 +6,8 @@ use Illuminate\Support\ServiceProvider;
 
 class ZendeskServiceProvider extends ServiceProvider {
 
+    private const PACKAGE_NAME = 'zendesk-laravel';
+
     /**
      * Indicates if loading of the provider is deferred.
      *
@@ -20,16 +22,19 @@ class ZendeskServiceProvider extends ServiceProvider {
      */
     public function register()
     {
-        $packageName = 'zendesk-laravel';
-        $configPath = __DIR__.'/../../config/zendesk-laravel.php';
-
         $this->mergeConfigFrom(
-            $configPath, $packageName
+            $this->configPath(), self::PACKAGE_NAME
         );
 
-        $this->publishes([
-            $configPath => config_path(sprintf('%s.php', $packageName)),
-        ]);
+        $this->app->singleton('zendesk', function () {
+            $driver = config('zendesk-laravel.driver', 'api');
+
+            if (is_null($driver) || $driver === 'log') {
+                return new NullService($driver === 'log');
+            }
+
+            return new ZendeskService;
+        });
     }
 
     /**
@@ -39,13 +44,13 @@ class ZendeskServiceProvider extends ServiceProvider {
      */
     public function boot()
     {
-        $this->app->bind('zendesk', function () {
-            $driver = config('zendesk-laravel.driver', 'api');
-            if (is_null($driver) || $driver === 'log') {
-                return new NullService($driver === 'log');
-            }
+        $this->publishes([
+            $this->configPath() => config_path(sprintf('%s.php', self::PACKAGE_NAME)),
+        ]);
+    }
 
-            return new ZendeskService;
-        });
+    private function configPath()
+    {
+        return __DIR__.'/../../config/'.self::PACKAGE_NAME.'.php';
     }
 }
